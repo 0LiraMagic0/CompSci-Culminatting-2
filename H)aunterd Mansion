@@ -1,0 +1,415 @@
+# CompSci Culminating
+# The Haunted Mansion Mystery
+
+import pygame
+import sys
+
+pygame.init()
+
+clearedScreen = False
+
+WIDTH = 600
+HEIGHT = 600
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
+
+# Fonts to be Used
+narratorFont = pygame.font.SysFont("Papyrus", 23, bold=True, italic=True)
+descriptionFont = pygame.font.SysFont("Century", 27, bold=True, italic=False)
+choiceFont = pygame.font.SysFont("Times New Roman", 30, bold=False, italic=False)
+titleFont = pygame.font.SysFont("Times New Roman", 40, bold=True, italic=True)
+artifactFont = pygame.font.SysFont("Century", 27,bold = False, italic = True)
+
+# Files/Graphics Loading In and Rects
+envelope = pygame.image.load("Untitled design.png")
+envelopeRect = envelope.get_rect(topleft=(55, 100))
+
+blackWallpaper = pygame.image.load("black wallpaper.webp")
+
+mansionImage = pygame.image.load("Mansion Pic.jpg")
+mansionImageRect = mansionImage.get_rect()
+
+# Artifacts List
+
+artifactsList = ["Glass Key", "Glided Hourglass", "Shadow Lantern"]
+
+glassKey = False
+glidedHourglass = False
+shadowLantern = False
+
+# First Game State | Start at the prologue
+gameState = "prologue"
+
+
+# A blit_text function used to display all the text in lines properly for large descriptions
+
+def blit_text(surface, firstDescriptionText, pos, max_width, narratorFont, color=pygame.Color('white')):
+    words = [word.split(' ') for word in
+             firstDescriptionText.splitlines()]  # 2D array where each row is a list of words.
+    space = narratorFont.size(' ')[0]  # The width of a space.
+    x, y = pos
+    for line in words:
+        for word in line:
+            word_surface = narratorFont.render(word, 0, color)
+            word_width, word_height = word_surface.get_size()
+            if x + word_width >= max_width:
+                x = pos[0]  # Reset the x. 
+                y += word_height  # Start on new row.
+            surface.blit(word_surface, (x, y))
+            x += word_width + space
+        x = pos[0]  # Reset the x.
+        y += word_height  # Start on new row.
+
+
+# Continue Button | Created the Continue Button that would be used basically everywhere in the game
+
+def continueButton():
+    global continueeRect
+    global continuee
+    continuee = titleFont.render("Continue", True, (0, 0, 0))
+    continueeRect = continuee.get_rect(center=(290, 420))
+
+    pygame.draw.rect(screen, (255, 255, 255), (190, 400, 200, 50))
+
+    screen.blit(continuee, continueeRect)
+
+    # Draw a red outline around the rectangle
+    pygame.draw.rect(screen, (255, 0, 0), continueeRect, 4)
+
+    print(f"Continue Button Rect: {continueeRect}")  # Debugging line
+
+# Choice 1 and Choice 2 Buttons | So User can pick which choice they want to do instead of the actual text
+
+choice1 = titleFont.render("1", True, (0, 0, 0))
+
+def choice1Button():
+    pygame.draw.circle(screen, (255, 255, 255), (140, 470), 50)
+    global choice1
+    screen.blit(choice1, (choice1.get_rect(center=(140, 470))))
+
+choice2 = titleFont.render("2", True, (0, 0, 0))
+
+def choice2Button():
+    pygame.draw.circle(screen, (255, 255, 255), (450, 470), 50)
+    global choice2
+    screen.blit(choice2, choice2.get_rect(center=(450, 470)))
+
+def inventory(inputText, inputActive):
+    clock = pygame.time.Clock()
+    artifacts = ["Glass Key", "Glided Hourglass", "Shadow Lantern"]
+
+    # Draw inventory box
+    pygame.draw.rect(screen, (255, 255, 255), (100, 400, 400, 300))
+
+    # Search box
+    inputBox = pygame.Rect(150, 420, 300, 50)
+
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            pygame.quit()
+            sys.exit()
+        elif event.type == pygame.MOUSEBUTTONDOWN:
+            # Toggle input box activity
+            if inputBox.collidepoint(event.pos):
+                inputActive = True
+            else:
+                inputActive = False
+        elif event.type == pygame.KEYDOWN and inputActive:
+            # Handle text input
+            if event.key == pygame.K_RETURN:
+                global inventoryOpen
+                inventoryOpen = False
+            elif event.key == pygame.K_BACKSPACE:
+                inputText = inputText[:-1]
+            else:
+                inputText += event.unicode
+
+    # Draw input box
+    boxColor = (200, 200, 200) if inputActive else (0, 0, 0)
+    pygame.draw.rect(screen, boxColor, inputBox, border_radius=5)
+    inputtedText = descriptionFont.render(inputText, True, (0, 0, 0))
+    screen.blit(inputtedText, (inputBox.x + 10, inputBox.y + 10))
+
+    # Display search results
+    searchResults = [artifact for artifact in artifacts if inputText.lower() in artifact.lower()]
+    y = 480
+    for result in searchResults:
+        result_text = descriptionFont.render(result, True, (0, 0, 0))
+        screen.blit(result_text, (inputBox.x, y))
+        y += 40
+
+    # Refresh display
+    pygame.display.flip()
+    clock.tick(30)
+
+    return inputText, inputActive
+
+inputText = ""
+inputActive = False
+inventoryOpen = False
+
+while inventoryOpen:
+    inputText, inputActive = inventory(inputText, inputActive)
+
+# Game States
+
+# Function: Prologue Gamestate 
+def prologueState():
+    # Fill the screen with black
+    screen.fill((0, 0, 0))
+
+    # Rendering Text and Centering the Text Horizontally and Vertically
+    introductionText1 = narratorFont.render("You receive a letter from your lawyer", True, (255, 255, 255))
+    introductionText2 = narratorFont.render("detailing an inheritance of your late-grandparents’ mansion.", True,
+                                            (255, 255, 255))
+    textRect1 = introductionText1.get_rect(center=(WIDTH // 2, HEIGHT // 14))
+    textRect2 = introductionText2.get_rect(center=(WIDTH // 2, HEIGHT // 8))
+
+    # Display the introduction text
+    screen.blit(introductionText1, (textRect1))
+    screen.blit(introductionText2, (textRect2))
+    screen.blit(envelope, (55, 100))
+
+
+# After the envelope gets opened and displays the text
+def openedEnvelope():
+    screen.fill((0, 0, 0))
+
+    envelopeText = (
+        "{Insert cryptic note from the grandparents that hints at \"unfinished business/secrets\" within the mansion.}"
+    )
+
+    blit_text(screen, envelopeText, (20, 20), 600, narratorFont)
+
+    continueButton()
+
+
+# Function: Homescreen Gamestate
+def homescreen():
+    # Refresh the screen to a wallpapered background, to show screen being switched
+    screen.blit(blackWallpaper, (0, 0))
+
+    # Title
+    titleText = titleFont.render("The Haunted Mansion Mystery", True, (255, 255, 255))
+
+    # Start Game Button
+    global startGameRect
+    startGame = titleFont.render("Start Game", True, (0, 0, 0))
+    startGameRect = startGame.get_rect(center=(290, 420))
+    pygame.draw.rect(screen, (255, 255, 255), (190, 400, 200, 50))
+
+    screen.blit(titleText, (40, 20))
+    screen.blit(startGame, startGameRect)
+
+
+# Next screen for the first writing dialogue
+def firstDescription():
+    screen.fill((0, 0, 0))
+
+    firstDescriptionText = (
+        "Entering through the rusty gates of the mansion, dirt flew into your face, "
+        "stinging your eyes.\n You coughed for a few seconds before looking up with blurry vision. "
+        "It looked as if the place had been slowly letting itself go for the last century. "
+        "As if the unexpected deaths of the owners had been the final nail in the coffin."
+    )
+
+    blit_text(screen, firstDescriptionText, (20, 20), 600, narratorFont)
+
+    continueButton()
+
+
+# Showing off what the mansion looks like!!!
+def mansionView():
+    screen.fill((0, 0, 0))
+
+    # Displaying Mansion Image
+    screen.blit(mansionImage, (0, 0))
+
+    clickToGoInside = titleFont.render("Click to Go Inside", True, (255, 255, 255))
+
+    screen.blit(clickToGoInside, (200, 550))
+
+
+# Second Dialogue piece before we actually enter the game
+def secondDescription():
+    screen.fill((0, 0, 0))
+
+    secondDescriptionText = (
+        "You push through the rusted entrance doors, its heavy wood creating a loud echoing creek."
+        "You closed the door right after, the electricity had been cut weeks ago and you didn’t"
+        "want to let the draft in. The last thing you needed was walking through the long narrowing halls"
+        " by yourself in the cold."
+    )
+
+    blit_text(screen, secondDescriptionText, (20, 20), 600, narratorFont)
+
+    continueButton()
+
+
+def choicesScreen():
+    screen.fill((0, 0, 0))
+
+    dialogueText = descriptionFont.render("This is Where the Dialogue Will Be", True, (255, 255, 255))
+    choice1Text = choiceFont.render("1st Choice", True, (255, 255, 255))
+    choice2Text = choiceFont.render("2nd Choice", True, (255, 255, 255))
+    inventoryText = titleFont.render("Inventory Will Appear Here", True, (255, 255, 255))
+
+    screen.blit(dialogueText, (85, 100))
+    screen.blit(choice1Text, (100, 300))
+    screen.blit(choice2Text, (400, 300))
+    screen.blit(inventoryText, (80, 500))
+    continueButton()
+
+
+def choicesPrologue():
+    screen.fill((0, 0, 0))
+
+    choiceStart = (
+        "Enough sunlight had seeped in through the smudged windows and withering curtains to be able to see far enough ahead. Checking the map that had been sent alongside the letter, there were two paths you could take."
+    )
+
+    choicesStart = (
+        "Begin exploring the first floor, going straight through the long narrow hallway that you couldn’t see an end to."
+    )
+
+    blit_text(screen, choiceStart, (20, 20), 600, narratorFont)
+    blit_text(screen, choicesStart, (20, 250), 600, narratorFont)
+
+    continueButton()
+
+
+# Actual Choices Start Here, Display, if Statements, and All
+def choiceGamePlay(pos):
+
+    global gameState  # global for modification
+
+    screen.fill((0, 0, 0))
+
+    descript1 = (
+        "You walk down the hallway, the walls decorated with various fancy decor from stands to paintings that hung from the walls. You suddenly stop, a specific painting catching your eye of your grandparents that hung crooked on the wall."
+    )
+
+    choiceOne1 = ("Adjust the painting ")
+    choiceTwo1 = ("Ignore it and keep walking")
+
+    blit_text(screen, descript1, (20, 20), 600, descriptionFont, (255, 255, 255))
+    blit_text(screen, choiceOne1, (20, 300), 300, choiceFont, (255, 255, 255))
+    blit_text(screen, choiceTwo1, (350, 300), 600, choiceFont, (255, 255, 255))
+
+    choice1Button()
+    choice2Button()
+
+    choice1Rect = choice1.get_rect(center=(140, 470))
+    choice2Rect = choice2.get_rect(center=(450, 470))
+
+    if pos and choice1Rect.collidepoint(pos):
+        gameState = "paintingAdjusted"
+
+    if pos and choice2Rect.collidepoint(pos):
+        gameState = "paintingIgnored"
+
+    if gameState == "paintingAdjusted":
+        screen.fill((0, 0, 0))
+        descript2 = (
+            "As you nudge the painting back into place, your finger knocks on something, a faint click echoes through the room. For a moment, everything is still. Before the painting begins to tilt forward, revealing a hidden compartment behind it."
+        )
+
+        addedGlassKey = ("Added Glass Key")
+        global glassKey
+        glassKey = True
+
+        blit_text(screen, descript2, (20, 20), 600, descriptionFont, (255, 255, 255))
+        blit_text(screen, addedGlassKey, (20, 300), 600, artifactFont, (255, 255, 255))
+
+        justContinue = titleFont.render("Continue", True, (255, 255, 255))  # White text for the button
+        justContinueeButton = justContinue.get_rect(center=(290, 420))  # Set the center of the button
+        pygame.draw.rect(screen, (255, 0, 0), justContinueeButton, 4)
+
+        screen.blit(justContinue, justContinueeButton)
+
+        if pos and justContinueeButton.collidepoint(pos):  # Check if the mouse is inside the button
+            print("Continue clicked - paintingIgnored state worked!")
+            gameState = "paintingIgnored"  # Update the game state to "paintingIgnored"     
+
+    if gameState == "paintingIgnored":
+        screen.fill((0, 0, 0))
+
+        descript3 = ("You keep walking, nearing the end of the passageway before seeing another set of two paths.")
+
+        choiceOne3 = ("Go right, down another long hallway")
+        choiceTwo3 = ("Go left, going up the second flight of stairs that leads to the second floor")
+
+        blit_text(screen, descript3, (20, 20), 600, descriptionFont, (255, 255, 255))
+        blit_text(screen, choiceOne3, (20, 200), 300, choiceFont, (255, 255, 255))
+        blit_text(screen, choiceTwo3, (350, 200), 600, choiceFont, (255, 255, 255))     
+
+        choice1Button()
+        choice2Button()   
+
+        pygame.display.update()
+
+    pygame.display.update()
+
+
+# Main Game Loop
+while True:
+    pos = None
+
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            pygame.quit()
+            sys.exit()
+
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            pos = pygame.mouse.get_pos()  # Capture the position of the mouse click
+            print(f"Mouse clicked at: {pos}")
+
+    # Managing Game States
+    if gameState == "prologue":
+        prologueState()
+        if pos and envelopeRect.collidepoint(pos):
+            gameState = "openedEnvelope"
+
+    elif gameState == "openedEnvelope":
+        openedEnvelope()
+        if pos and continueeRect.collidepoint(pos):
+            gameState = "homescreen"
+
+    elif gameState == "homescreen":
+        homescreen()
+        if pos and startGameRect.collidepoint(pos):
+            gameState = "firstDescription"
+
+    elif gameState == "firstDescription":
+        firstDescription()
+        if pos and continueeRect.collidepoint(pos):
+            gameState = "mansionView"
+
+    elif gameState == "mansionView":
+        mansionView()
+        if pos and mansionImageRect.collidepoint(pos):
+            gameState = "secondDescription"
+
+    elif gameState == "secondDescription":
+        secondDescription()
+        if pos and continueeRect.collidepoint(pos):
+            gameState = "choicesScreen"
+
+    elif gameState == "choicesScreen":
+        choicesScreen()
+        if pos and continueeRect.collidepoint(pos):
+            gameState = "choicesPrologue"
+
+
+    elif gameState == "choicesPrologue":
+        choicesPrologue()
+        if pos and continueeRect.collidepoint(pos):
+            gameState = "choiceGamePlay"
+
+    elif gameState == "choiceGamePlay":
+        choiceGamePlay(pos)
+    
+    elif inventoryOpen == True:
+        inventory()
+
+    # Update the display
+    pygame.display.update()
